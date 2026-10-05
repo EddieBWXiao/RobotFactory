@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="../static/lib/jspsych-6.1.0/jspsych.js"></script>
+  <script src="../static/lib/jspsych-6.1.0/plugins/jspsych-instructions.js"></script>
+  <script src="../static/lib/jspsych-6.1.0/plugins/jspsych-call-function.js"></script>
+  <script src="../static/lib/jspsych-6.1.0/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="../static/js/jspsych-pit-trial.js"></script>
+  <script src="../static/js/jspsych-pit-instructions.js"></script>
+  <script src="../static/js/jspsych-pit-comprehension.js"></script>
+  <script src="../static/js/jspsych-survey-template.js"></script>
+  <script src="../static/js/jspsych-survey-demo.js"></script>
+  <script src="../static/js/jspsych-survey-debrief.js"></script>
+  <script src="../static/js/jspsych-affective-slider.js"></script>
+  <link href="../static/lib/jspsych-6.1.0/css/jspsych.css" rel="stylesheet">
+  <link href="../static/css/factory-css.min.css" rel="stylesheet">
+</head>
+<body></body>
+<script>
+    // 1. Constants
+const key_go = 32;               // spacebar (jsPsych 6 uses keycodes)
+const trial_duration = 1300;     // response window (ms)
+const feedback_duration = 1200;  // feedback (ms)
+const rune_set = 'elianto';
+const p_valid = 0.8;             // set to 1 to turn off sham feedback
+const n_reps = 15;               // 4 robots x 15 = 60 trials
+
+const colors = {
+  win:  { scanner: '#3366ff99', outcome: '#1a3ea7', good: '+10', bad: '+1'  },
+  lose: { scanner: '#f73b6a7A', outcome: '#930a25', good: '-1',  bad: '-10' }
+};
+
+// 2. Four robot types, each randomly assigned a rune
+const runes = jsPsych.randomization.shuffle(['U', 'L', 'A', 'G']);
+const robots = [
+  { valence: 'win',  action: 'go'    },
+  { valence: 'win',  action: 'no-go' },
+  { valence: 'lose', action: 'go'    },
+  { valence: 'lose', action: 'no-go' }
+];
+
+// 3. Build the timeline
+var timeline = [];
+for (let rep = 0; rep < n_reps; rep++) {
+  jsPsych.randomization.shuffle([0, 1, 2, 3]).forEach(function(k) {
+    const robot = robots[k];
+    const c = colors[robot.valence];
+    const sham = (Math.random() < p_valid) ? 0 : 1;
+
+    timeline.push({
+      type: 'pit-trial',
+      robot_rune: runes[k],
+      rune_set: rune_set,
+      scanner_color: c.scanner,
+      outcome_color: c.outcome,
+      outcome_correct:   sham ? c.bad  : c.good,
+      outcome_incorrect: sham ? c.good : c.bad,
+      correct: (robot.action == 'go') ? key_go : -1,
+      valid_responses: [key_go],
+      trial_duration: trial_duration,
+      feedback_duration: feedback_duration,
+      data: {
+        trial: timeline.length + 1,
+        robot: k + 1,
+        valence: robot.valence,
+        action: robot.action,
+        sham: sham
+      }
+    });
+  });
+}
+
+// 4. Run
+jsPsych.init({
+  timeline: timeline,
+  on_finish: function() {
+    jsPsych.data.displayData('csv');   // dump the data on screen when done
+  }
+});
+</script>
+</html>
